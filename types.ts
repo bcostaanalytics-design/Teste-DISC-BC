@@ -27,6 +27,10 @@ export interface AssessmentResult {
   id: string;
   userInfo: UserInfo;
   scores: DISCScore;
+  responses: {
+    most: DISCKey[];
+    least: DISCKey[];
+  };
   timestamp: string;
   analysis?: string;
 }

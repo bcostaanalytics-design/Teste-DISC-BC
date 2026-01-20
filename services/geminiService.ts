@@ -6,22 +6,22 @@ export const analyzeDISCResults = async (scores: DISCScore): Promise<string> => 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    Aja como um especialista sênior em Psicologia Organizacional e Análise Comportamental focado no SETOR DE LOGÍSTICA.
-    Analise os seguintes resultados de um teste DISC (escala de 0 a 10) para a empresa "BC Logística":
+    Aja como um especialista sênior em Psicologia Organizacional e Análise Comportamental focado no SETOR DE LOGÍSTICA DE ALTA PERFORMANCE.
+    Analise os resultados de um assessment DISC detalhado de 30 QUESTÕES para a empresa "BC Logística":
     Dominância (D): ${scores.D}
     Influência (I): ${scores.I}
     Estabilidade (S): ${scores.S}
     Conformidade (C): ${scores.C}
 
-    Forneça um relatório profissional estruturado em português com foco operacional e de gestão:
-    1. Nome do Perfil Logístico (ex: "O Operador Ágil", "O Estrategista de Frota").
-    2. Pontos Fortes em Ambientes de Alta Pressão (armazéns, entregas, prazos críticos).
-    3. Riscos Operacionais / Áreas de Desenvolvimento.
-    4. Estilo de Comunicação com a Equipe BC.
-    5. Diretrizes para Liderança: Como maximizar a entrega deste perfil.
-    6. Adequação de Função: Em qual área da logística este perfil melhor se encaixa (Operacional, Planejamento, Gestão, Comercial).
+    Com base na profundidade das 30 questões, forneça um relatório executivo em português:
+    1. Nome do Perfil Logístico Estratégico.
+    2. Análise de Profundidade: Como este perfil se comporta sob estresse logístico real (atrasos, quebra de frota, pico de demanda).
+    3. Evidências de Conduta: Pontos fortes observados no checklist de 30 passos.
+    4. Estilo de Gestão e Comunicação BC: Como ele lidera ou é liderado no ambiente operacional.
+    5. Diretrizes para Alta Performance: Plano de ação para este perfil entregar o máximo de eficiência.
+    6. Alocação Técnica: Qual o "posto de trabalho" ideal na BC Log (ex: Gestão de Pátio, Planejamento de Rotas, Diretoria, SAC).
 
-    Mantenha um tom executivo, focado em resultados e eficiência. Use Markdown para formatação e emoticons relacionados a logística (🚛, 📦, 🏗️, 📈) onde fizer sentido.
+    Mantenha um tom sério, analítico e orientado a resultados logísticos. Use Markdown para formatação e emoticons (🚛, 📋, 🏗️, 🚀).
   `;
 
   try {
@@ -29,9 +29,9 @@ export const analyzeDISCResults = async (scores: DISCScore): Promise<string> => 
       model: 'gemini-3-flash-preview',
       contents: prompt,
     });
-    return response.text || "Não foi possível gerar a análise logística no momento.";
+    return response.text || "Análise indisponível. Por favor, verifique os scores abaixo.";
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    return "Erro ao processar a análise estratégica. Por favor, tente novamente mais tarde.";
+    return "Erro ao processar a análise detalhada. Os scores foram salvos no histórico.";
   }
 };

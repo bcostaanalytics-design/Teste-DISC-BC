@@ -21,12 +21,23 @@ export const DISC_QUESTIONS: QuestionGroup[] = [
   { id: 17, options: [{ text: "Seguro", type: "D" }, { text: "Dócil", type: "S" }, { text: "Influente", type: "I" }, { text: "Ordeiro", type: "C" }] },
   { id: 18, options: [{ text: "Analítico", type: "C" }, { text: "Sincero", type: "S" }, { text: "Vibrante", type: "I" }, { text: "Energético", type: "D" }] },
   { id: 19, options: [{ text: "Encantador", type: "I" }, { text: "Preciso", type: "C" }, { text: "Obstinado", type: "D" }, { text: "Harmonioso", type: "S" }] },
-  { id: 20, options: [{ text: "Modesto", type: "S" }, { text: "Objetivo", type: "D" }, { text: "Comunicativo", type: "I" }, { text: "Exigente", type: "C" }] }
+  { id: 20, options: [{ text: "Modesto", type: "S" }, { text: "Objetivo", type: "D" }, { text: "Comunicativo", type: "I" }, { text: "Exigente", type: "C" }] },
+  // Novas 10 questões (Total 30)
+  { id: 21, options: [{ text: "Obstinado", type: "D" }, { text: "Persuasivo", type: "I" }, { text: "Generoso", type: "S" }, { text: "Metódico", type: "C" }] },
+  { id: 22, options: [{ text: "Energético", type: "D" }, { text: "Sociável", type: "I" }, { text: "Bondoso", type: "S" }, { text: "Sistemático", type: "C" }] },
+  { id: 23, options: [{ text: "Vigoroso", type: "D" }, { text: "Polido", type: "I" }, { text: "Amigável", type: "S" }, { text: "Convencional", type: "C" }] },
+  { id: 24, options: [{ text: "Direto", type: "D" }, { text: "Alegre", type: "I" }, { text: "Concordante", type: "S" }, { text: "Disciplinado", type: "C" }] },
+  { id: 25, options: [{ text: "Audaz", type: "D" }, { text: "Convencedor", type: "I" }, { text: "Resignado", type: "S" }, { text: "Preciso", type: "C" }] },
+  { id: 26, options: [{ text: "Bravo", type: "D" }, { text: "Vivaz", type: "I" }, { text: "Auxiliador", type: "S" }, { text: "Factual", type: "C" }] },
+  { id: 27, options: [{ text: "Autoconfiante", type: "D" }, { text: "Despreocupado", type: "I" }, { text: "Sereno", type: "S" }, { text: "Exato", type: "C" }] },
+  { id: 28, options: [{ text: "Decidido", type: "D" }, { text: "Otimista", type: "I" }, { text: "Cooperativo", type: "S" }, { text: "Rigoroso", type: "C" }] },
+  { id: 29, options: [{ text: "Arrojado", type: "D" }, { text: "Cativante", type: "I" }, { text: "Suave", type: "S" }, { text: "Analítico", type: "C" }] },
+  { id: 30, options: [{ text: "Assertivo", type: "D" }, { text: "Expressivo", type: "I" }, { text: "Paciente", type: "S" }, { text: "Lógico", type: "C" }] }
 ];
 
 export const PROFILE_INFO = {
-  D: { title: "Dominância", color: "#EF4444", description: "Foca em resultados, objetivos finais e autoconfiança.", traits: ["Direto", "Decisivo", "Forte", "Inquisitivo"] },
-  I: { title: "Influência", color: "#F59E0B", description: "Foca em influenciar ou persuadir os outros, relacionamentos.", traits: ["Entusiasta", "Otimista", "Social", "Vivaz"] },
-  S: { title: "Estabilidade", color: "#10B981", description: "Foca na cooperação, sinceridade e confiabilidade.", traits: ["Calmo", "Acomodado", "Paciente", "Leal"] },
-  C: { title: "Conformidade", color: "#3B82F6", description: "Foca na qualidade, precisão, perícia e competência.", traits: ["Analítico", "Reservado", "Preciso", "Sistemático"] }
+  D: { title: "Dominância", color: "#C2410C", description: "Foco em resultados, comando e eficiência operacional.", traits: ["Direto", "Decisivo", "Forte", "Inquisitivo"] },
+  I: { title: "Influência", color: "#F97316", description: "Foco em persuasão, otimismo e dinâmicas de equipe.", traits: ["Entusiasta", "Otimista", "Social", "Vivaz"] },
+  S: { title: "Estabilidade", color: "#FB923C", description: "Foco em consistência, suporte e processos seguros.", traits: ["Calmo", "Acomodado", "Paciente", "Leal"] },
+  C: { title: "Conformidade", color: "#7C2D12", description: "Foco em precisão técnica, normas e qualidade logísitca.", traits: ["Analítico", "Reservado", "Preciso", "Sistemático"] }
 };

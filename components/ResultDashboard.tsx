@@ -1,20 +1,21 @@
 
 import React from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { DISCScore } from '../types';
-import { PROFILE_INFO } from '../constants';
+import { DISCScore, AssessmentResult } from '../types';
+import { PROFILE_INFO, DISC_QUESTIONS } from '../constants';
 
 interface ResultDashboardProps {
   scores: DISCScore;
   analysis: string;
+  result: AssessmentResult;
 }
 
-export const ResultDashboard: React.FC<ResultDashboardProps> = ({ scores, analysis }) => {
+export const ResultDashboard: React.FC<ResultDashboardProps> = ({ scores, analysis, result }) => {
   const chartData = [
-    { subject: 'D - DOMINÂNCIA', A: scores.D, fullMark: 10, color: '#EF4444' },
-    { subject: 'I - INFLUÊNCIA', A: scores.I, fullMark: 10, color: '#F59E0B' },
-    { subject: 'S - ESTABILIDADE', A: scores.S, fullMark: 10, color: '#10B981' },
-    { subject: 'C - CONFORMIDADE', A: scores.C, fullMark: 10, color: '#3B82F6' },
+    { subject: 'D - DOMINÂNCIA', A: scores.D, fullMark: 10 },
+    { subject: 'I - INFLUÊNCIA', A: scores.I, fullMark: 10 },
+    { subject: 'S - ESTABILIDADE', A: scores.S, fullMark: 10 },
+    { subject: 'C - CONFORMIDADE', A: scores.C, fullMark: 10 },
   ];
 
   return (
@@ -26,7 +27,7 @@ export const ResultDashboard: React.FC<ResultDashboardProps> = ({ scores, analys
             <div className="bg-orange-500 p-1.5 rounded">
                 <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
             </div>
-            Matriz Comportamental BC
+            Matriz BC de Performance
           </h2>
           
           <div className="h-[350px] w-full">
@@ -61,7 +62,7 @@ export const ResultDashboard: React.FC<ResultDashboardProps> = ({ scores, analys
 
         {/* Quick Legend */}
         <div className="bg-black text-white p-8 rounded-2xl shadow-2xl border-t-4 border-orange-500">
-          <h2 className="text-xl font-black mb-8 uppercase italic text-orange-500 tracking-tighter">Pilares de Eficiência</h2>
+          <h2 className="text-xl font-black mb-8 uppercase italic text-orange-500 tracking-tighter">Pilares do Assessment</h2>
           <div className="space-y-6">
             {(Object.entries(PROFILE_INFO) as [string, typeof PROFILE_INFO['D']][]).map(([key, info]) => (
               <div key={key} className="flex gap-5 p-4 rounded bg-slate-900 border border-slate-800 hover:border-orange-500 transition-colors">
@@ -95,8 +96,56 @@ export const ResultDashboard: React.FC<ResultDashboardProps> = ({ scores, analys
              })}
           </div>
         </div>
-        <div className="bg-slate-50 p-6 border-t border-slate-100 text-center">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Este relatório é propriedade da BC Logística e deve ser tratado com confidencialidade.</p>
+      </div>
+
+      {/* Checklist Evidence Section (New) */}
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+        <div className="bg-slate-100 px-8 py-5 flex items-center gap-4 border-b-4 border-black">
+           <div className="bg-black p-2 rounded">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+           </div>
+           <h2 className="text-xl font-black text-black uppercase italic tracking-tighter">Checklist de Respostas (Evidência 30 Etapas)</h2>
+        </div>
+        <div className="p-0 overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Módulo</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Termo Selecionado (+)</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Termo Selecionado (-)</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Impacto DISC</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {DISC_QUESTIONS.map((q, idx) => {
+                const mostKey = result.responses.most[idx];
+                const leastKey = result.responses.least[idx];
+                const mostText = q.options.find(o => o.type === mostKey)?.text;
+                const leastText = q.options.find(o => o.type === leastKey)?.text;
+                
+                return (
+                  <tr key={idx} className="hover:bg-orange-50/50">
+                    <td className="px-6 py-3 font-bold text-slate-400 text-xs">#{q.id}</td>
+                    <td className="px-6 py-3 font-black text-black uppercase italic text-sm">
+                      <span className="text-orange-600 mr-2">+</span> {mostText}
+                    </td>
+                    <td className="px-6 py-3 font-black text-slate-400 uppercase italic text-sm">
+                      <span className="text-slate-300 mr-2">-</span> {leastText}
+                    </td>
+                    <td className="px-6 py-3 text-center">
+                       <div className="inline-flex gap-1">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black text-white ${mostKey === 'D' ? 'bg-orange-800' : mostKey === 'I' ? 'bg-orange-600' : mostKey === 'S' ? 'bg-orange-400' : 'bg-slate-800'}`}>+{mostKey}</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-slate-200 text-slate-500">-{leastKey}</span>
+                       </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="bg-black p-4 text-center">
+            <p className="text-[9px] font-black text-orange-500 uppercase tracking-[0.4em]">Auditado e Validado pelo Sistema Teams Insights BC Logística</p>
         </div>
       </div>
     </div>
