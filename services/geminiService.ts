@@ -6,22 +6,34 @@ export const analyzeDISCResults = async (scores: DISCScore): Promise<string> => 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    Aja como um especialista sênior em Psicologia Organizacional e Análise Comportamental focado no SETOR DE LOGÍSTICA DE ALTA PERFORMANCE.
-    Analise os resultados de um assessment DISC detalhado de 30 QUESTÕES para a empresa "BC Logística":
+    Aja como um especialista sênior em Psicologia Organizacional para o sistema "Picking de Potenciais DISC" de BRUNO COSTA.
+    O foco desta análise é alta performance em ARMAZÉM, INVENTÁRIO e ESTOQUE.
+    O lema é: "Separando Perfis, Montando Equipes de Alta Performance".
+
+    Analise os resultados do assessment DISC (30 QUESTÕES):
     Dominância (D): ${scores.D}
     Influência (I): ${scores.I}
     Estabilidade (S): ${scores.S}
     Conformidade (C): ${scores.C}
 
-    Com base na profundidade das 30 questões, forneça um relatório executivo em português:
-    1. Nome do Perfil Logístico Estratégico.
-    2. Análise de Profundidade: Como este perfil se comporta sob estresse logístico real (atrasos, quebra de frota, pico de demanda).
-    3. Evidências de Conduta: Pontos fortes observados no checklist de 30 passos.
-    4. Estilo de Gestão e Comunicação BC: Como ele lidera ou é liderado no ambiente operacional.
-    5. Diretrizes para Alta Performance: Plano de ação para este perfil entregar o máximo de eficiência.
-    6. Alocação Técnica: Qual o "posto de trabalho" ideal na BC Log (ex: Gestão de Pátio, Planejamento de Rotas, Diretoria, SAC).
+    Você deve estruturar o relatório obrigatoriamente nesta ordem e com estes títulos de seção:
 
-    Mantenha um tom sério, analítico e orientado a resultados logísticos. Use Markdown para formatação e emoticons (🚛, 📋, 🏗️, 🚀).
+    # PRINCIPAL CARACTERÍSTICA DO CANDIDATO
+    (Forneça uma única frase impactante que defina o comportamento predominante deste perfil no ambiente logístico).
+
+    # RESUMO DE PONTOS FORTES
+    (Apresente de 3 a 5 pontos fortes em bullet points, focando em produtividade, organização e trabalho em equipe).
+
+    # PONTOS A MELHORAR
+    (Apresente de 2 a 4 áreas de desenvolvimento em bullet points, focando em evitar gargalos operacionais e erros de inventário).
+
+    # ANÁLISE ESTRATÉGICA BC LOG
+    1. Perfil de Picking: Dê um nome criativo ao perfil (ex: "O Auditor de Precisão").
+    2. Atuação no Fluxo: Como a precisão e velocidade deste perfil afetam o controle de estoque.
+    3. Diretrizes de Gestão: Como Bruno Costa deve gerenciar este colaborador para o máximo resultado.
+    4. Alocação Técnica: Sugira a melhor área (Recebimento, Conferência, Picking ou Inventariante).
+
+    Mantenha um tom profissional, analítico e focado em alta eficiência. Use Markdown e emoticons logísticos (🏗️, 📦, 📈, ✅).
   `;
 
   try {
@@ -29,9 +41,9 @@ export const analyzeDISCResults = async (scores: DISCScore): Promise<string> => 
       model: 'gemini-3-flash-preview',
       contents: prompt,
     });
-    return response.text || "Análise indisponível. Por favor, verifique os scores abaixo.";
+    return response.text || "Análise de Potenciais indisponível. Consulte os scores brutos abaixo.";
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    return "Erro ao processar a análise detalhada. Os scores foram salvos no histórico.";
+    return "Erro no processamento da IA de Bruno Costa. Os dados técnicos foram preservados no histórico.";
   }
 };
