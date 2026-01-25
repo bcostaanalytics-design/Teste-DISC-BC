@@ -33,6 +33,8 @@ export interface AssessmentResult {
   };
   timestamp: string;
   analysis?: string;
+  suggestion?: string;
+  profileSummary?: string;
 }
 
 export enum AppState {

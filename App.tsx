@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AppState, DISCScore, DISCKey, AssessmentResult, UserInfo } from './types';
 import { DISC_QUESTIONS } from './constants';
 import { Button } from './components/Button';
 import { QuestionCard } from './components/QuestionCard';
 import { ResultDashboard } from './components/ResultDashboard';
 import { analyzeDISCResults } from './services/geminiService';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 const ADMIN_PASSWORD = "Log2026";
 
@@ -52,28 +53,62 @@ export default function App() {
 
   const exportToCSV = () => {
     if (history.length === 0) return;
-    const headers = ["ID", "Data", "Nome", "E-mail", "D", "I", "S", "C"];
-    const rows = history.map(h => [
-      h.id,
-      new Date(h.timestamp).toLocaleString('pt-BR'),
-      h.userInfo.name,
-      h.userInfo.email,
-      h.scores.D,
-      h.scores.I,
-      h.scores.S,
-      h.scores.C
-    ]);
+    const headers = ["ID", "Data", "Nome", "E-mail", "D", "I", "S", "C", "Perfil Dominante", "Resumo do Perfil", "Sugestão de Abordagem"];
+    
+    const rows = history.map(h => {
+      const scores = [
+        { key: 'Dominância', val: h.scores.D },
+        { key: 'Influência', val: h.scores.I },
+        { key: 'Estabilidade', val: h.scores.S },
+        { key: 'Conformidade', val: h.scores.C }
+      ];
+      const dominant = scores.reduce((prev, current) => (prev.val > current.val) ? prev : current).key;
+
+      return [
+        h.id,
+        new Date(h.timestamp).toLocaleString('pt-BR'),
+        h.userInfo.name,
+        h.userInfo.email,
+        h.scores.D,
+        h.scores.I,
+        h.scores.S,
+        h.scores.C,
+        dominant,
+        `"${(h.profileSummary || "N/A").replace(/"/g, '""')}"`,
+        `"${(h.suggestion || "N/A").replace(/"/g, '""')}"`
+      ];
+    });
+
     const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `Picking_Potenciais_Relatorio_${new Date().toLocaleDateString()}.csv`);
+    link.setAttribute("download", `Relatorio_Logistico_BC_DISC_${new Date().toLocaleDateString()}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
+
+  const adminStats = useMemo(() => {
+    if (history.length === 0) return null;
+    const counts = { D: 0, I: 0, S: 0, C: 0 };
+    history.forEach(h => {
+      const s = h.scores;
+      const maxVal = Math.max(s.D, s.I, s.S, s.C);
+      if (s.D === maxVal) counts.D++;
+      else if (s.I === maxVal) counts.I++;
+      else if (s.S === maxVal) counts.S++;
+      else counts.C++;
+    });
+    return [
+      { name: 'Dominância', value: counts.D, color: '#C2410C' },
+      { name: 'Influência', value: counts.I, color: '#F97316' },
+      { name: 'Estabilidade', value: counts.S, color: '#FB923C' },
+      { name: 'Conformidade', value: counts.C, color: '#7C2D12' },
+    ];
+  }, [history]);
 
   const handleStartInfo = () => {
     setUserInfo({ name: '', email: '' });
@@ -123,14 +158,16 @@ export default function App() {
     const scores = calculateFinalScores(most, least);
     
     try {
-      const analysisText = await analyzeDISCResults(scores);
+      const data = await analyzeDISCResults(scores);
       const newResult: AssessmentResult = {
         id: Math.random().toString(36).substr(2, 9),
         userInfo,
         scores,
         responses: { most, least },
         timestamp: new Date().toISOString(),
-        analysis: analysisText
+        analysis: data.analysis,
+        suggestion: data.suggestion,
+        profileSummary: data.profileSummary
       };
       setResult(newResult);
       saveToHistory(newResult);
@@ -142,7 +179,9 @@ export default function App() {
         scores,
         responses: { most, least },
         timestamp: new Date().toISOString(),
-        analysis: "Análise processada. Resultados de alta performance disponíveis abaixo."
+        analysis: "Erro no processamento da IA.",
+        suggestion: "Manter abordagem técnica padrão.",
+        profileSummary: "Resumo indisponível."
       };
       setResult(fallbackResult);
       saveToHistory(fallbackResult);
@@ -152,20 +191,13 @@ export default function App() {
     }
   };
 
-  const clearHistory = () => {
-    if (confirm("Deseja apagar permanentemente o banco de dados de Bruno Costa?")) {
-      setHistory([]);
-      localStorage.removeItem('disc_assessment_history_bruno_costa');
-    }
-  };
-
   const logoutAdmin = () => {
     setIsAdmin(false);
     setState(AppState.WELCOME);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-orange-100">
       <header className="bg-black text-white sticky top-0 z-50 print:hidden border-b-4 border-orange-500 shadow-lg">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setState(AppState.WELCOME)}>
@@ -178,7 +210,7 @@ export default function App() {
           </div>
           <div className="flex gap-2">
             {isAdmin && state === AppState.HISTORY ? (
-              <Button variant="outline" size="sm" onClick={logoutAdmin} className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white uppercase font-black">SAIR</Button>
+              <Button variant="outline" size="sm" onClick={logoutAdmin} className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white uppercase font-black">SAIR DO PAINEL</Button>
             ) : (
               <Button variant="outline" size="sm" onClick={handleAdminAccess} className="bg-transparent border-white text-white hover:bg-white hover:text-black uppercase font-black px-4">
                 PAINEL GESTOR
@@ -206,7 +238,7 @@ export default function App() {
             <div className="bg-white p-8 rounded-2xl border-2 border-slate-100 shadow-xl text-left space-y-4">
               <h3 className="text-lg font-black text-black uppercase italic border-b-2 border-orange-500 pb-2 inline-block">O que é este teste?</h3>
               <p className="text-slate-600 leading-relaxed font-medium">
-                Este assessment utiliza a consagrada metodologia <strong>DISC</strong> para mapear as tendências comportamentais de cada colaborador. Através da análise de quatro pilares fundamentais — <strong>Dominância, Influência, Estabilidade e Conformidade</strong> — conseguimos identificar o "picking" ideal de talentos para as complexas operações de logística.
+                Este assessment utiliza a consagrada metodologia <strong>DISC</strong> para mapear as tendências comportamentais de cada colaborador. Através da análise de quatro pilares fundamentais — <strong>Dominância, Influência, Estabilidade e Conformidade</strong> — conseguimos identificar o "picking" ideal de talentos para as operações.
               </p>
             </div>
 
@@ -220,7 +252,6 @@ export default function App() {
                   <div className="flex items-center gap-2 font-black uppercase text-xs text-black border-b-2 border-orange-500 pb-1 tracking-widest">ESTOQUE</div>
               </div>
             </div>
-            <p className="text-sm text-slate-400 font-semibold pt-10">Desenvolvido por Bruno Costa para Auditoria de Talentos Logísticos.</p>
           </div>
         )}
 
@@ -269,105 +300,158 @@ export default function App() {
               <div className="absolute inset-0 border-8 border-slate-100 rounded-full"></div>
               <div className="absolute inset-0 border-8 border-orange-500 rounded-full border-t-transparent animate-spin"></div>
             </div>
-            <h3 className="text-3xl font-black text-black uppercase italic tracking-tighter">Processando "Picking" de Perfil...</h3>
-            <p className="text-slate-500 text-lg font-medium italic">Analisando acuracidade comportamental para Bruno Costa.</p>
+            <h3 className="text-3xl font-black text-black uppercase italic tracking-tighter">Analisando Perfil Logístico...</h3>
           </div>
         )}
 
         {state === AppState.RESULT && result && (
-          <div className="animate-in fade-in duration-1000">
-             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-8 rounded-2xl border-l-8 border-orange-500 shadow-xl print:shadow-none print:border-none">
+          <div className="animate-in fade-in duration-1000 flex flex-col items-center">
+             <div className="w-full mb-10 bg-white p-12 rounded-3xl border-t-8 border-green-500 shadow-2xl flex flex-col items-center text-center gap-6">
+                <div className="bg-green-100 p-4 rounded-full">
+                   <svg className="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                </div>
                 <div>
-                   <span className="text-xs font-black text-orange-600 uppercase tracking-widest italic">Análise de Potencial DISC - Bruno Costa</span>
-                   <h2 className="text-4xl font-black text-black tracking-tight uppercase italic">{result.userInfo.name}</h2>
-                   <p className="text-slate-500 font-bold">{result.userInfo.email} • {new Date(result.timestamp).toLocaleDateString('pt-BR')}</p>
+                   <h2 className="text-4xl font-black text-black uppercase italic">Muito Obrigado, {result.userInfo.name.split(' ')[0]}!</h2>
+                   <p className="text-slate-500 font-bold text-xl mt-2">Sua participação foi registrada com sucesso no sistema de Bruno Costa.</p>
                 </div>
-                <div className="flex gap-3 print:hidden">
-                   <Button variant="primary" onClick={() => window.print()} className="bg-orange-600 hover:bg-orange-700 gap-2 shadow-lg px-8 py-3 uppercase font-black">
-                      EXPORTAR PDF
-                   </Button>
-                   <Button variant="outline" onClick={() => setState(AppState.WELCOME)} className="border-black text-black uppercase font-black px-6">VOLTAR</Button>
+                <div className="w-full max-w-md bg-slate-50 p-6 rounded-2xl border-2 border-slate-100">
+                   <p className="text-slate-600 font-medium italic">"Seus dados agora fazem parte da nossa estratégia de alta performance. Clique no botão abaixo para concluir."</p>
                 </div>
+                <Button variant="primary" onClick={() => setState(AppState.WELCOME)} className="bg-black hover:bg-orange-600 px-20 py-6 text-xl shadow-2xl uppercase font-black transform hover:-translate-y-1 transition-all">
+                   FINALIZAR E OK
+                </Button>
              </div>
-             <ResultDashboard scores={result.scores} analysis={result.analysis || ""} result={result} />
+             
+             <div className="w-full opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+               <ResultDashboard scores={result.scores} analysis={result.analysis || ""} result={result} />
+             </div>
           </div>
         )}
 
         {state === AppState.HISTORY && isAdmin && (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-black p-8 rounded-2xl text-white border-b-8 border-orange-500 shadow-2xl">
+          <div className="space-y-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-black p-10 rounded-3xl text-white border-b-8 border-orange-500 shadow-2xl">
               <div>
-                 <h2 className="text-3xl font-black uppercase italic tracking-tighter">Picking de Talentos <span className="text-orange-500">Bruno Costa</span></h2>
-                 <p className="text-orange-200 font-medium italic">Controle de Equipes de Alta Performance.</p>
+                 <h2 className="text-4xl font-black uppercase italic tracking-tighter">Gestão de Talentos <span className="text-orange-500">Bruno Costa</span></h2>
+                 <p className="text-orange-200 font-medium italic text-lg">Dashboards e Auditoria Comportamental.</p>
               </div>
-              <div className="flex gap-3">
-                <Button variant="outline" size="sm" onClick={clearHistory} className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white uppercase font-bold">Limpar</Button>
-                <Button variant="primary" size="sm" onClick={exportToCSV} disabled={history.length === 0} className="bg-orange-500 hover:bg-orange-600 text-black uppercase font-black px-6 shadow-orange-500/20 shadow-lg">
-                  DOWNLOAD EXCEL
+              <div className="flex gap-4">
+                <Button variant="primary" onClick={exportToCSV} disabled={history.length === 0} className="bg-orange-500 hover:bg-orange-600 text-black uppercase font-black px-8 py-4 shadow-orange-500/20 shadow-xl">
+                  EXPORTAR CSV COMPLETO
                 </Button>
               </div>
             </div>
 
-            {history.length === 0 ? (
-              <div className="bg-white p-24 text-center rounded-2xl border-4 border-dashed border-slate-200">
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xl italic">Sem dados de estoque humano registrados.</p>
+            {/* Dashboards Section */}
+            {adminStats && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-4 bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Distribuição de Perfis
+                  </h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={adminStats} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                          {adminStats.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip />
+                        <Legend verticalAlign="bottom" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                
+                <div className="lg:col-span-8 bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Volume por Categoria DISC
+                  </h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={adminStats}>
+                        <XAxis dataKey="name" tick={{fontSize: 10, fontWeight: 800, fill: '#64748b'}} />
+                        <YAxis hide />
+                        <Tooltip cursor={{fill: '#f8fafc'}} />
+                        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                          {adminStats.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* KPI Cards */}
+                <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="bg-black text-white p-8 rounded-3xl border-l-8 border-orange-500">
+                     <span className="text-[10px] font-black uppercase text-orange-500 tracking-widest">Total Sincronizados</span>
+                     <div className="text-5xl font-black italic mt-1">{history.length}</div>
+                  </div>
+                  <div className="bg-white p-8 rounded-3xl border-2 border-slate-100">
+                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Perfil Predominante</span>
+                     <div className="text-3xl font-black text-black italic mt-1">
+                        {adminStats.reduce((prev, curr) => prev.value > curr.value ? prev : curr).name}
+                     </div>
+                  </div>
+                  <div className="bg-white p-8 rounded-3xl border-2 border-slate-100 flex items-center justify-center">
+                     <Button variant="outline" className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => {if(confirm("Apagar histórico?")) { setHistory([]); localStorage.removeItem('disc_assessment_history_bruno_costa'); }}}>Limpar Banco</Button>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+            )}
+
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-900 border-b-4 border-orange-500 text-white">
-                        <th className="px-6 py-5 text-xs font-black uppercase tracking-widest">Sincronização</th>
-                        <th className="px-6 py-5 text-xs font-black uppercase tracking-widest">Colaborador</th>
-                        <th className="px-6 py-5 text-center text-xs font-black text-orange-400 uppercase">D</th>
-                        <th className="px-6 py-5 text-center text-xs font-black text-orange-400 uppercase">I</th>
-                        <th className="px-6 py-5 text-center text-xs font-black text-orange-400 uppercase">S</th>
-                        <th className="px-6 py-5 text-center text-xs font-black text-orange-400 uppercase">C</th>
-                        <th className="px-6 py-5 text-center text-xs font-black uppercase tracking-widest">Status</th>
+                        <th className="px-8 py-6 text-xs font-black uppercase tracking-widest">Colaborador</th>
+                        <th className="px-8 py-6 text-center text-xs font-black text-orange-400 uppercase">D</th>
+                        <th className="px-8 py-6 text-center text-xs font-black text-orange-400 uppercase">I</th>
+                        <th className="px-8 py-6 text-center text-xs font-black text-orange-400 uppercase">S</th>
+                        <th className="px-8 py-6 text-center text-xs font-black text-orange-400 uppercase">C</th>
+                        <th className="px-8 py-6 text-xs font-black uppercase tracking-widest">Abordagem Sugerida</th>
+                        <th className="px-8 py-6 text-center text-xs font-black uppercase tracking-widest">Ação</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {history.map((h) => (
                         <tr key={h.id} className="hover:bg-orange-50 transition-colors group">
-                          <td className="px-6 py-4 text-sm text-slate-500 font-medium">{new Date(h.timestamp).toLocaleDateString('pt-BR')}</td>
-                          <td className="px-6 py-4">
+                          <td className="px-8 py-6">
                             <div className="text-sm font-black text-black uppercase italic">{h.userInfo.name}</div>
+                            <div className="text-[10px] text-slate-400">{new Date(h.timestamp).toLocaleDateString('pt-BR')}</div>
                           </td>
-                          <td className="px-6 py-4 text-center font-black text-orange-700">{h.scores.D}</td>
-                          <td className="px-6 py-4 text-center font-black text-orange-700">{h.scores.I}</td>
-                          <td className="px-6 py-4 text-center font-black text-orange-700">{h.scores.S}</td>
-                          <td className="px-6 py-4 text-center font-black text-orange-700">{h.scores.C}</td>
-                          <td className="px-6 py-4 text-center">
-                            <button 
-                              onClick={() => { setResult(h); setState(AppState.RESULT); }}
-                              className="bg-black text-white px-5 py-2 rounded text-[10px] font-black uppercase hover:bg-orange-500 transition-all shadow-md group-hover:scale-105"
-                            >
-                              VER PERFIL
-                            </button>
+                          <td className="px-8 py-6 text-center font-black text-orange-700">{h.scores.D}</td>
+                          <td className="px-8 py-6 text-center font-black text-orange-700">{h.scores.I}</td>
+                          <td className="px-8 py-6 text-center font-black text-orange-700">{h.scores.S}</td>
+                          <td className="px-8 py-6 text-center font-black text-orange-700">{h.scores.C}</td>
+                          <td className="px-8 py-6 text-xs font-bold text-slate-600 max-w-xs italic">
+                            "{h.suggestion}"
+                          </td>
+                          <td className="px-8 py-6 text-center">
+                            <button onClick={() => { setResult(h); setState(AppState.RESULT); }} className="bg-black text-white px-6 py-2.5 rounded text-[10px] font-black uppercase hover:bg-orange-500 transition-all">VER</button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
       </main>
 
-      <footer className="bg-black text-white border-t-8 border-orange-500 py-10 mt-auto print:hidden">
+      <footer className="bg-black text-white border-t-8 border-orange-500 py-12 mt-auto print:hidden">
         <div className="max-w-6xl mx-auto px-4 text-center space-y-4">
-           <h4 className="text-xl font-black italic uppercase tracking-tighter leading-none">Picking de Potenciais <span className="text-orange-500">DISC</span></h4>
-           <p className="text-slate-400 text-[10px] uppercase font-bold tracking-[0.2em] italic">
+           <h4 className="text-2xl font-black italic uppercase tracking-tighter leading-none">Picking de Potenciais <span className="text-orange-500">DISC</span></h4>
+           <p className="text-slate-400 text-xs uppercase font-bold tracking-[0.2em] italic">
              "Separando Perfis, Montando Equipes de Alta Performance"
            </p>
-           <p className="text-slate-600 text-[9px] font-bold">
-             © {new Date().getFullYear()} Bruno Costa Logística. Auditoria Comportamental Avançada.
+           <div className="w-16 h-1 bg-orange-500 mx-auto my-6"></div>
+           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">
+             Uma ferramenta produzida por <span className="text-white">Bruno Costa</span>
            </p>
-           <p className="text-slate-500 text-[11px] font-medium italic pt-2">
-             Uma ferramenta produzida por Bruno Costa
+           <p className="text-slate-700 text-[10px] font-bold mt-4">
+             © {new Date().getFullYear()} Bruno Costa Logística. Auditoria Comportamental em Vercel/GitHub Environment.
            </p>
         </div>
       </footer>
